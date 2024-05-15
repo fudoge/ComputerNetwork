@@ -36,6 +36,7 @@ int main(void) {
         printf("%s", buf_recv);
 
         scanf("%d", &option);
+        // Service 1(TIME)
         if(option == 1) {
             strcpy(buf_send, "\\service 1");
             send(sock, buf_send, sizeof(buf_send), 0);
@@ -48,6 +49,7 @@ int main(void) {
             }
             printf("Server Time: %s", buf_recv);
             continue;
+        // Service 2(Donwload)
         } else if(option == 2) {
             strcpy(buf_send, "\\service 2");
             send(sock, buf_send, sizeof(buf_send), 0);
@@ -63,6 +65,7 @@ int main(void) {
             scanf("%d", &option);
             sprintf(buf_send, "%d", option);
             send(sock, buf_send, sizeof(buf_send), 0);
+            // Service 2-1 (Book)
             if (option == 1)
             {
                 f = fopen("./Book.txt", "wb");
@@ -83,6 +86,7 @@ int main(void) {
 
                 fclose(f);
                 continue;
+            // Service 2-2 (Piucture)
             } else if(option == 2) {
                 f = fopen("./HallymUniv.jpg", "wb");
                 while (1)
@@ -105,12 +109,16 @@ int main(void) {
                 fclose(f);
                 continue;
             }
+            // Service 2-3 (Go Back)
             else if (option == 3)
             {
                 strcpy(buf_send, "3");
                 send(sock, buf_send, sizeof(buf_send), 0);
                 continue;
+            } else {
+                exit(1);
             }
+            // Service 3 (Echo)
         } else if(option == 3) {
             strcpy(buf_send, "\\service 3");
             send(sock, buf_send, sizeof(buf_send), 0);
