@@ -3,6 +3,7 @@
 #define PATH "./sock_addr"
 #define PORT 8080
 
+char* QUIT = "quit";
 int server_socket_fd;
 short connection_flag = 1;
 
@@ -43,6 +44,7 @@ void *unix_communication(void *arg)
         perror("listen(unix)");
         exit(1);
     }
+    printf("[Info] Unix socket : waiting for conn req\n");
 
     unix_client = accept(unix_server, NULL, NULL);
     if (unix_client < 0)
@@ -50,13 +52,14 @@ void *unix_communication(void *arg)
         perror("accpet(unix)");
         exit(1);
     }
+    printf("[Info] Unix socket : client connected\n");
 
     connection_flag = 0;
     set_nonblocking(unix_client);
     set_nonblocking(unix_server);
     while (1)
     {
-        int buflen = read(unix_client, buffer, sizeof(buffer));
+        int buflen = recv(unix_client, buffer, sizeof(buffer), 0);
         if (buflen < 0)
         {
             if (errno != EWOULDBLOCK && errno != EAGAIN)
@@ -67,12 +70,18 @@ void *unix_communication(void *arg)
         }
         else
         {
-            if (write(server_socket_fd, buffer, buflen) < 0)
+            if (send(server_socket_fd, buffer, buflen, 0) < 0)
             {
-                perror("writing to server");
+                perror("send");
                 exit(1);
             }
             printf("[Me] %s", buffer);
+            if (strcmp(buffer, QUIT) == 0)
+            {
+                printf("[SERVER] %s\n", buffer);
+                printf("[Info] Closing sockets");
+                exit(1);
+            }
         }
     }
 
@@ -107,13 +116,14 @@ int main() {
         perror("connect(inet)");
         exit(1);
     }
+    printf("[Info] Inet socket : connected to the server\n");
 
     set_nonblocking(server_socket_fd);
 
     while (1)
     {
         memset(buf, 0, BUFFER_SIZE);
-        int buflen = read(server_socket_fd, buf, sizeof(buf));
+        int buflen = recv(server_socket_fd, buf, sizeof(buf), 0);
         if(buflen < 0) {
             if (errno != EWOULDBLOCK && errno != EAGAIN)
             {
@@ -121,7 +131,7 @@ int main() {
                 exit(1);
             }
         } else if(buflen > 0) {
-            printf("[YOU]: %s", buf);
+            printf("[YOU] %s", buf);
         }
     }
 

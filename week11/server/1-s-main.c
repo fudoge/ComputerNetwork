@@ -4,7 +4,9 @@
 #define PORT 8080
 #define BUFFER_SIZE 256
 
+char *QUIT = "quit\n";
 int client_socket_fd;
+short connection_flag = 1;
 
 void set_nonblocking(int sock) {
     if(fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK) == -1) {
@@ -36,30 +38,38 @@ void *unix_communication(void* arg) {
         perror("listen(unix)");
         exit(1);
     }
+    printf("[Info] Unix socket : waiting for conn req\n");
 
     unix_client = accept(unix_server,NULL, NULL);
     if(unix_client < 0) {
         perror("accpet(unix)");
         exit(1);
     }
+    printf("[Info] Unix socket : client connected\n");
+    connection_flag = 0;
 
     set_nonblocking(unix_client);
     set_nonblocking(unix_server);
     while(1) {
         memset(buffer, 0, BUFFER_SIZE);
-        int buflen = read(unix_client, buffer, sizeof(buffer));
+        int buflen = recv(unix_client, buffer, sizeof(buffer), 0);
         if(buflen < 0) {
             if(errno != EWOULDBLOCK && errno != EAGAIN) {
                 perror("read(unix)");
                 exit(1);
             }
         } else {
-            if (write(client_socket_fd, buffer, buflen) < 0)
+            if (send(client_socket_fd, buffer, buflen, 0) < 0)
             {
                 perror("writing to server");
                 exit(1);
             }
             printf("[Me] %s", buffer);
+            if(strcmp(buffer, QUIT) == 0) {
+                printf("[SERVER] %s\n", buffer);
+                printf("[Info] Closing sockets");
+                exit(1);
+            }
         }
     }
 
@@ -80,6 +90,8 @@ int main() {
         exit(1);
     }
 
+    while(connection_flag){}
+
     server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket_fd < 0 ) {
         perror("socket(inet)");
@@ -98,20 +110,21 @@ int main() {
         perror("listen(inet)");
         exit(1);
     }
+    printf("[Info] Inet socket : waiting for conn req\n");
 
     client_socket_fd = accept(server_socket_fd, (struct sockaddr *)&i_addr_client, &len);
     if(client_socket_fd < 0) {
         perror("accpet(inet)");
         exit(1);
     }
-    printf("Connection accpeted from: %u\n", ntohl(i_addr_client.sin_addr.s_addr));
+    printf("[Info] Inet socket: client connected\n");
 
     set_nonblocking(client_socket_fd);
     set_nonblocking(server_socket_fd);
 
     while(1) {
         memset(buf, 0, BUFFER_SIZE);
-        int buflen = read(client_socket_fd, buf, sizeof(buf));
+        int buflen = recv(client_socket_fd, buf, sizeof(buf),0);
         if(buflen < 0) {
             if (errno != EWOULDBLOCK && errno != EAGAIN) {
                 perror("read(inet)");
