@@ -110,7 +110,7 @@ int main() {
             printf("[Chaewoon Kang] %s", buf);
             if (strcmp(buf, QUIT) == 0)
             {
-                printf("[Info] Closing sockets");
+                printf("[Me] quit");
                 exit(1);
             }
         }
