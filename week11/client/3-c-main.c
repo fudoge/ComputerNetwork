@@ -3,7 +3,7 @@
 #define PATH "./sock_addr"
 #define PORT 8080
 
-char* QUIT = "quit";
+char* QUIT = "quit\n";
 int server_socket_fd;
 short connection_flag = 1;
 
@@ -30,6 +30,7 @@ void *unix_communication(void *arg)
         exit(1);
     }
 
+    unlink(PATH);
     u_addr.sun_family = AF_UNIX;
     strcpy(u_addr.sun_path, PATH);
 
@@ -78,7 +79,6 @@ void *unix_communication(void *arg)
             printf("[Me] %s", buffer);
             if (strcmp(buffer, QUIT) == 0)
             {
-                printf("[SERVER] %s\n", buffer);
                 printf("[Info] Closing sockets");
                 exit(1);
             }

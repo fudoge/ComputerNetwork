@@ -26,6 +26,7 @@ void *unix_communication(void* arg) {
         exit(1);
     }
 
+    unlink(PATH);
     u_addr.sun_family = AF_UNIX;
     strcpy(u_addr.sun_path, PATH);
 
