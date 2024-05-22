@@ -4,8 +4,6 @@
 #define PORT 8080
 
 char* QUIT = "quit\n";
-int server_socket_fd;
-short connection_flag = 1;
 
 void set_nonblocking(int sock)
 {
@@ -16,13 +14,15 @@ void set_nonblocking(int sock)
     }
 }
 
-void *unix_communication(void *arg)
-{
+int main() {
+    int server_socket_fd;
     int unix_server, unix_client;
     struct sockaddr_un u_addr, u_addr_client;
-    char buffer[BUFFER_SIZE];
     socklen_t unix_clientlen;
+    struct sockaddr_in i_addr_server;
+    char buf[256];
 
+    // start unix listening...
     unix_server = socket(AF_UNIX, SOCK_STREAM, 0);
     if (unix_server < 0)
     {
@@ -55,51 +55,10 @@ void *unix_communication(void *arg)
     }
     printf("[Info] Unix socket : client connected\n");
 
-    connection_flag = 0;
     set_nonblocking(unix_client);
     set_nonblocking(unix_server);
-    while (1)
-    {
-        int buflen = recv(unix_client, buffer, sizeof(buffer), 0);
-        if (buflen < 0)
-        {
-            if (errno != EWOULDBLOCK && errno != EAGAIN)
-            {
-                perror("read(unix)");
-                exit(1);
-            }
-        }
-        else
-        {
-            if (send(server_socket_fd, buffer, buflen, 0) < 0)
-            {
-                perror("send");
-                exit(1);
-            }
-            printf("[Me] %s", buffer);
-            if (strcmp(buffer, QUIT) == 0)
-            {
-                printf("[Info] Closing sockets");
-                exit(1);
-            }
-        }
-    }
 
-    close(unix_client);
-    close(unix_server);
-    return NULL;
-}
-
-int main() {
-    struct sockaddr_in i_addr_server;
-    char buf[256];
-    pthread_t u_thread;
-
-    if(pthread_create(&u_thread, NULL, unix_communication, NULL) != 0) {
-        perror("unix_thread");
-        exit(1);
-    }
-
+    // establish inet connection
     server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket_fd < 0) {
         perror("socket(inet)");
@@ -109,8 +68,6 @@ int main() {
     i_addr_server.sin_family = AF_INET;
     i_addr_server.sin_addr.s_addr = htonl(INADDR_ANY);
     i_addr_server.sin_port = htons(PORT);
-
-    while(connection_flag) {}
 
     if(connect(server_socket_fd, (const struct sockaddr*)&i_addr_server, sizeof(i_addr_server)) < 0) {
         perror("connect(inet)");
@@ -132,6 +89,30 @@ int main() {
             }
         } else if(buflen > 0) {
             printf("[YOU] %s", buf);
+        }
+
+        buflen = recv(unix_client, buf, sizeof(buf), 0);
+        if (buflen < 0)
+        {
+            if (errno != EWOULDBLOCK && errno != EAGAIN)
+            {
+                perror("read(unix)");
+                exit(1);
+            }
+        }
+        else
+        {
+            if (send(server_socket_fd, buf, buflen, 0) < 0)
+            {
+                perror("send");
+                exit(1);
+            }
+            printf("[Chaewoon Kang] %s", buf);
+            if (strcmp(buf, QUIT) == 0)
+            {
+                printf("[Info] Closing sockets");
+                exit(1);
+            }
         }
     }
 
