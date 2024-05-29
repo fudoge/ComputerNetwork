@@ -4,9 +4,18 @@
 #define BUF_SIZE 256
 #define QUIT "quit\n"
 
+int sock;
+
+void handler(int signum)
+{
+    close(sock);
+    exit(EXIT_SUCCESS);
+}
+
 int main()
 {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    signal(SIGINT, handler);
+    sock = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in addr;
     char buf[BUF_SIZE];
 

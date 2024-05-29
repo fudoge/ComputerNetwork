@@ -4,9 +4,17 @@
 #define BUF_SIZE 256
 #define QUIT "quit\n"
 
+int sd, csd; // socket descriptor, client socket descriptor
+
+void handler(int signum)
+{
+    close(sd);
+    close(csd);
+    exit(EXIT_SUCCESS);
+}
+
 int main()
 {
-    int sd, csd; // socket descriptor, client socket descriptor
     struct sockaddr_in server, client;
     socklen_t client_len;
     int client_cnt = 0;
@@ -38,12 +46,12 @@ int main()
 
     while (1)
     {
-        client_len = sizeof(client); // Initialize client_len with size of client structure
+        client_len = sizeof(client);
         csd = accept(sd, (struct sockaddr *)&client, &client_len);
         if (csd == -1)
         {
             perror("accept");
-            continue; // Don't exit, continue to accept other connections
+            continue; 
         }
         printf("New Client!\n");
         printf("Number of service clients: %d\n", ++client_cnt);
@@ -67,7 +75,6 @@ int main()
                     perror("recv");
                     exit(1);
                 }
-                // buf[bytes_received] = '\0';
 
                 if (strcmp(buf, QUIT) == 0)
                 {

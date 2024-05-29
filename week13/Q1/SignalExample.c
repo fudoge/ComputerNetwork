@@ -12,16 +12,10 @@ void handler(int signum)
 
 int main()
 {
-    // SIGINT 시그널 핸들러를 등록
     signal(SIGINT, handler);
-
-    // "Sleep begins!" 문자열 출력
     printf("Sleep begins!\n");
-
-    // 1000초 동안 sleep
     sleep(1000);
-
-    // "Wake up!" 문자열 출력
+    
     printf("Wake up!\n");
 
     return 0;

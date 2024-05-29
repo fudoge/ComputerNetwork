@@ -1,23 +1,29 @@
 #include "headerFiles.h"
 
-#define QUIT "quit";
+#define QUITMSG "quit\n";
 #define PORT 8080
 #define BUF_SIZE 256
 #define N_CLIENT 3
 
-void set_nonblocking(int sock)
+int sd;
+int comm_sock[N_CLIENT];
+
+void handler(int signum)
 {
-    if (fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK) == -1)
+    for (int i = 0; i < N_CLIENT; i++)
     {
-        perror("fnctl");
-        exit(1);
+        if (comm_sock[i] != -1)
+        {
+            close(comm_sock[i]);
+        }
     }
+    close(sd);
 }
 
-int maxArr(int arr[], int size)
+int maxArr(int arr[])
 {
     int max = arr[0];
-    for (int i = 1; i < size; i++)
+    for (int i = 1; i < N_CLIENT; i++)
     {
         if (arr[i] > max)
             max = arr[i];
@@ -25,9 +31,10 @@ int maxArr(int arr[], int size)
     return max;
 }
 
-int main() {
-    int sd;
-    int comm_sock[N_CLIENT];
+int main()
+{
+    signal(SIGINT, handler);
+
     struct sockaddr_in server, client;
     socklen_t clilen;
     char buf[BUF_SIZE];
@@ -36,7 +43,8 @@ int main() {
     int i;
 
     sd = socket(AF_INET, SOCK_STREAM, 0);
-    if(sd == -1) {
+    if (sd == -1)
+    {
         perror("socket");
         exit(1);
     }
@@ -46,7 +54,8 @@ int main() {
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons(PORT);
 
-    if(bind(sd, (struct sockaddr *)&server, sizeof(server)) == -1) {
+    if (bind(sd, (struct sockaddr *)&server, sizeof(server)) == -1)
+    {
         perror("bind");
         exit(1);
     }
@@ -70,27 +79,33 @@ int main() {
         }
     }
 
-    while (1) {
+    while (1)
+    {
         FD_ZERO(&readfds);
         for (i = 0; i < N_CLIENT; i++)
         {
             FD_SET(comm_sock[i], &readfds);
         }
         printf("waiting at select ...\n");
-        ret = select(maxArr(comm_sock, N_CLIENT) + 1, &readfds, NULL, NULL, NULL);
+        ret = select(maxArr(comm_sock) + 1, &readfds, NULL, NULL, NULL);
         printf("select returned: %d\n", ret);
         switch (ret)
         {
         case -1:
             perror("select");
             exit(1);
+        case 0:
+            printf("select returns : 0\n");
+            break;
         default:
             i = 0;
             while (ret > 0)
             {
-                if(FD_ISSET(comm_sock[i], &readfds)) {
+                if (FD_ISSET(comm_sock[i], &readfds))
+                {
                     memset(buf, 0, sizeof(buf));
-                    if(recv(comm_sock[i], buf, sizeof(buf), 0) == -1) {
+                    if (recv(comm_sock[i], buf, sizeof(buf), 0) == -1)
+                    {
                         perror("recv");
                         exit(1);
                     }

@@ -12,3 +12,4 @@
 #include <sys/wait.h>
 #include <sys/un.h>
 #include <sys/fcntl.h>
+#include <signal.h>
