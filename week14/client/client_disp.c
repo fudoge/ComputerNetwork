@@ -1,6 +1,6 @@
 #include "headerFiles.h"
 
-#define QUIT "quit"
+#define QUIT "quit\n"
 #define BUF_SIZE 512
 #define PORT 8080
 int unc_sd, uns_sd, inet_sd; // unixServerSD, unixClientSD, inetClientSD
@@ -103,17 +103,35 @@ int main()
 
         while (1)
         {
-            recv(inet_sd, buf, sizeof(buf), 0);
-            if (strlen(buf) > 0)
+            int buflen = recv(inet_sd, buf, sizeof(buf), 0);
+            if(buflen < 0) {
+                if (errno != EWOULDBLOCK && errno != EAGAIN)
+                {
+                    perror("recv(inet)");
+                    close(unc_sd);
+                    close(uns_sd);
+                    close(inet_sd);
+                    unlink(PATH);
+                    exit(1);
+                }
+            }
+            if (buflen > 0)
             {
-                printf("%s\n", buf);
+                if(strcmp(buf, QUIT) == 0) {
+                    close(unc_sd);
+                    close(uns_sd);
+                    close(inet_sd);
+                    unlink(PATH);
+                    return 0;
+                }
+                printf("%s", buf);
             }
 
             memset(buf, 0, sizeof(buf));
             recv(unc_sd, buf, sizeof(buf), 0);
             if (strlen(buf) > 0)
             {
-                printf("[Me] %s\n", buf);
+                printf("[Me] %s", buf);
 
                 if (send(inet_sd, buf, sizeof(buf), 0) == -1)
                 {

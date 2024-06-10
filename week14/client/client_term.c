@@ -1,6 +1,6 @@
 #include "headerFiles.h"
 
-#define QUIT "quit"
+#define QUIT "quit\n"
 #define BUF_SIZE 512
 
 char PATH[32];
